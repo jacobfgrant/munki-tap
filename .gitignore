@@ -1,0 +1,15 @@
+#.gitignore file for jacobfgrant/munki-tap
+
+
+# .DS_Store files
+.DS_Store
+
+# Archives
+*.tar
+*.zip
+
+# Packages
+*.pkg
+
+# Python
+*.pyc
