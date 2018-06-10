@@ -1,0 +1,302 @@
+#!/usr/bin/python
+
+#  Munkitap
+#
+#  munkitap
+#
+#
+#  Created by Jacob F. Grant
+#
+#  Written: 06/9/18
+#  Updated: 06/25/18
+#
+
+"""
+munkitap
+
+Tool for automating building macOS packages from the latest Homebrew
+formulae using Tim Sutton's brew-pkg tool and importing them into munki.
+
+Requires Homebrew and brew-pkg:
+
+https://github.com/Homebrew/brew
+https://github.com/timsutton/brew-pkg
+"""
+
+import argparse
+import json
+import os
+import subprocess
+
+from munkitaplib import *
+
+
+BUNDLE_ID = 'com.github.munkitap'
+
+
+# Munkitap functions
+
+def add_formula(formula):
+    """Add a formula to munkitap"""
+    on_tap = get_pref('ON_TAP')
+    if not on_tap:
+        on_tap = set()
+    else:
+        on_tap = set(on_tap)
+    if formula in on_tap:
+        print formula + " already in munkitap"
+    else:
+        on_tap.add(formula)
+        set_pref('ON_TAP', list(on_tap))
+        print formula + " added to munkitap"
+
+
+def remove_formula(formula):
+    """Remove a formula from munkitap"""
+    on_tap = set(get_pref('ON_TAP')) or set()
+    if formula not in on_tap:
+        print formula + " not in munkitap"
+    else:
+        # Remove from formula list
+        on_tap.remove(formula)
+        set_pref('ON_TAP', list(on_tap))
+        print formula + " removed from munkitap"
+    # Remove from formula info array
+    formula_info = dict(get_formula_info())
+    try:
+        del formula_info[formula]
+    except KeyError:
+        pass
+    set_pref('FORMULA_INFO', formula_info)
+
+
+def update_formula_info(formula):
+    """Update formula info"""
+    formula_info = dict(get_formula_info())
+    brew_formula_info = subprocess.check_output([get_brew(), 'info', '--json=v1', formula])
+    brew_formula_info = json.loads(brew_formula_info)[0]
+    if formula not in formula_info.keys():
+        formula_info[formula] = {
+            'build': ''
+        }
+    else:
+        formula_info[formula] = dict(formula_info[formula])
+    formula_info[formula]['description'] = brew_formula_info['desc']
+    formula_info[formula]['url'] = brew_formula_info['homepage']
+    formula_info[formula]['version'] = brew_formula_info['versions']['stable']
+    set_pref('FORMULA_INFO', formula_info)
+
+
+
+def pour_formula(formula, identifier=None, force_pour=False):
+    """Pour a formula (build a pkg)"""
+    formula_info = get_pref('FORMULA_INFO')[formula]
+    build_path = os.path.join(get_cache(), formula)
+    if not force_pour:
+        if os.path.isfile(
+            os.path.join(
+                build_path, 
+                (formula + '-' + formula_info['version'] + '.pkg')
+            )
+        ):
+            print "Package " + (formula + '-' + formula_info['version'] + '.pkg') + " already exists"
+            return
+    try: 
+        os.makedirs(build_path)
+    except OSError:
+        if not os.path.isdir(build_path):
+            raise
+    if not identifier:
+        identifier = get_id()
+    subprocess.Popen(
+        [
+            get_brew(),
+            'pkg',
+            '--with-dep',
+            '--identifier-prefix',
+            identifier,
+            formula,
+        ],
+        cwd=build_path
+    )
+    return
+
+
+# Parser functions
+
+def munkitap_add_subparser(subparsers):
+    """Munkitap 'add' subparser"""
+    add_command_subparser = subparsers.add_parser(
+        "add",
+        help="Add brew formula to munkitap"
+    )
+    add_command_subparser.add_argument(
+        "formula",
+        action='store',
+        type=str,
+        help="Brew formula to add to munkitap",
+    )
+    add_command_subparser.add_argument(
+        "-i",
+        "--install",
+        action='store_true',
+        help="Tells brew to install/upgrade the given formula"
+    )
+
+
+def munkitap_remove_subparser(subparsers):
+    """Munkitap 'remove' subparser"""
+    remove_command_subparser = subparsers.add_parser(
+        "remove",
+        help="Remove brew formula from munkitap"
+    )
+    remove_command_subparser.add_argument(
+        "formula",
+        action='store',
+        type=str,
+        help="Brew formula to remove from munkitap",
+    )
+    remove_command_subparser.add_argument(
+        "-u",
+        "--uninstall",
+        action='store_true',
+        help="Tells brew to uninstall the given formula"
+    )
+
+
+def munkitap_pour_subparser(subparsers):
+    """Munkitap 'pour' subparser"""
+    pour_command_subparser = subparsers.add_parser(
+        "pour",
+        help="Pour munkitap formulas (build packages)"
+    )
+    pour_command_subparser.add_argument(
+        "-f",
+        "--formula",
+        action='store',
+        type=str,
+        help="Pour a specific formula",
+        metavar='\b'
+    )
+    pour_command_subparser.add_argument(
+        "-id",
+        "--identifier",
+        action='store',
+        type=str,
+        help="Use the specified identifer",
+        dest='identifier',
+        metavar='\b'
+    )
+
+
+def munkitap_set_subparser(subparsers):
+    """Munkitap 'set' subparser"""
+    set_command_subparser = subparsers.add_parser(
+        "set",
+        help="Set munkitap preferences"
+    )
+    set_command_subparser.add_argument(
+        "-c",
+        "--cache",
+        action='store',
+        type=str,
+        help="Set the munkitap pkg cache location",
+        dest='cache',
+        metavar='\b'
+    )
+    set_command_subparser.add_argument(
+        "-id",
+        "--identifier",
+        action='store',
+        type=str,
+        help="Set the pkg identifier",
+        dest='identifier',
+        metavar='\b'
+    )
+
+
+
+## Main function
+
+def main():
+    """Main function"""
+    # Parse script arguments
+    main_parser = argparse.ArgumentParser(
+        description='Automates building pkg files from brew formulae.'
+    )
+    '''main_parser.add_argument(
+        '-q',
+        '--quiet',
+        action="store_true",
+        help="Suppress normal output messages. Errors will still be printed to stderr.",
+    )'''
+    subparsers = main_parser.add_subparsers(
+        title='Munkitap commands',
+        description='(command line options for munkitap)',
+        help='additional help',
+        dest='command'
+    )
+    munkitap_add_subparser(subparsers)
+    munkitap_remove_subparser(subparsers)
+    munkitap_pour_subparser(subparsers)
+    munkitap_set_subparser(subparsers)
+
+    args = main_parser.parse_args()
+
+    if not brew_installed():
+        print "Please install brew."
+        exit()
+
+    if os.geteuid() == 0:
+        print "Do not run munkitap as root"
+        exit()
+
+    munkitap_command = args.command
+    try:
+        formula = args.formula
+    except AttributeError:
+        pass
+
+    # Add
+    if munkitap_command == 'add':
+        if is_brew_formula(formula):
+            add_formula(formula)
+            update_formula_info(formula)
+            if args.install:
+                install_latest_brew_formula(formula)
+        return
+
+    # Remove
+    if munkitap_command == 'remove':
+        remove_formula(formula)
+        if args.uninstall:
+            uninstall_brew_formula(formula)
+        return
+
+    # Pour
+    if munkitap_command == 'pour':
+        if args.formula:
+            is_brew_formula(formula)
+            if args.formula in get_on_tap():
+                install_latest_brew_formula(formula)
+                update_formula_info(formula)
+                pour_formula(formula, identifier=args.identifier)
+            else:
+                print args.formula + " not in munkitap"
+        else:   
+            for on_tap_formula in get_on_tap():
+                install_latest_brew_formula(on_tap_formula)
+                update_formula_info(on_tap_formula)
+                pour_formula(on_tap_formula, identifier=args.identifier)
+
+    # Set
+    if munkitap_command == 'set':
+        if args.cache:
+            set_cache(args.cache)
+        if args.identifier:
+            set_id(args.identifier)
+            
+
+
+if __name__ == "__main__":
+    main()
