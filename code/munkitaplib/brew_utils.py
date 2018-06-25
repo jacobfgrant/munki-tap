@@ -57,6 +57,7 @@ def update_brew():
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     ).communicate()
+    return out, err
 
 
 def install_brew_tap(tap):
@@ -70,6 +71,7 @@ def install_brew_tap(tap):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     ).communicate()
+    return out, err
 
 
 def install_latest_brew_formula(formula):
@@ -87,6 +89,7 @@ def install_latest_brew_formula(formula):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     ).communicate()
+    return out, err
 
 
 def uninstall_brew_formula(formula):
@@ -100,6 +103,7 @@ def uninstall_brew_formula(formula):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     ).communicate()
+    return out, err
 
 
 if __name__ == "__main__":
