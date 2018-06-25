@@ -28,6 +28,8 @@ import json
 import os
 import subprocess
 
+from glob import glob
+
 from munkitaplib import *
 
 
@@ -93,14 +95,16 @@ def pour_formula(formula, identifier=None, force_pour=False):
     formula_info = get_pref('FORMULA_INFO')[formula]
     build_path = os.path.join(get_cache(), formula)
     if not force_pour:
-        if os.path.isfile(
+        for pkg in glob(
             os.path.join(
-                build_path, 
-                (formula + '-' + formula_info['version'] + '.pkg')
+                build_path,
+                (formula + '-' + formula_info['version'] + '*.pkg')
             )
         ):
-            print "Package " + (formula + '-' + formula_info['version'] + '.pkg') + " already exists"
-            return
+            if os.path.isfile(pkg):
+                print "Package " + pkg + " already exists."
+                print "Use the --force command if you wish to rebuild the package."
+                return
     try: 
         os.makedirs(build_path)
     except OSError:
