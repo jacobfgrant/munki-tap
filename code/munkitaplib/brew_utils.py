@@ -59,6 +59,19 @@ def update_brew():
     ).communicate()
 
 
+def install_brew_tap(tap):
+    """Installs a homebrew tap"""
+    out, err = subprocess.Popen(
+        [
+            get_brew(),
+            'tap',
+            tap,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    ).communicate()
+
+
 def install_latest_brew_formula(formula):
     """Install or upgrade a brew formula"""
     if True:

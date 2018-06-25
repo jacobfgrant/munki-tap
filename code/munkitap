@@ -247,13 +247,19 @@ def main():
 
     args = main_parser.parse_args()
 
-    if not brew_installed():
-        print "Please install brew."
-        exit()
-
+    # Check if sudo/root
     if os.geteuid() == 0:
         print "Do not run munkitap as root"
         exit()
+
+    # Check if homebrew installed
+    if not brew_installed():
+        print "Please install Homebrew."
+        exit()
+
+    # Install brew-pkg
+    install_brew_tap('timsutton/formulae')
+    install_latest_brew_formula('brew-pkg')
 
     munkitap_command = args.command
     try:
