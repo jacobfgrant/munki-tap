@@ -8,7 +8,7 @@
 #  Created by Jacob F. Grant
 #
 #  Written: 06/24/18
-#  Updated: 06/25/18
+#  Updated: 06/27/18
 #
 
 """
@@ -34,16 +34,18 @@ def brew_installed():
         return True
 
 
-def is_brew_formula(formula, formula_list=None):
+def is_brew_formula(formula, formula_list=None, quiet=False):
     """Check if formula in homebrew"""
     if not formula_list:
         formula_list = subprocess.check_output([get_brew(), 'search'])
         formula_list = formula_list.split('\n')[:-1]
     if formula in formula_list:
-        print formula + " in brew"
+        if not quiet:
+            print formula + " in homebrew"
         return True
     else:
-        print formula + " not in brew"
+        if not quiet:
+            print formula + " not in homebrew"
         return False
 
 

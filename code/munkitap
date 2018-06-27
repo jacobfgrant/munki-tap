@@ -8,7 +8,7 @@
 #  Created by Jacob F. Grant
 #
 #  Written: 06/9/18
-#  Updated: 06/25/18
+#  Updated: 06/27/18
 #
 
 """
@@ -38,7 +38,7 @@ BUNDLE_ID = 'com.github.munkitap'
 
 # Munkitap functions
 
-def add_formula(formula):
+def add_formula(formula, quiet=False):
     """Add a formula to munkitap"""
     on_tap = get_pref('ON_TAP')
     if not on_tap:
@@ -46,27 +46,33 @@ def add_formula(formula):
     else:
         on_tap = set(on_tap)
     if formula in on_tap:
-        print formula + " already in munkitap"
+        if not quiet:
+            print formula + " already in munkitap"
     else:
         on_tap.add(formula)
         set_pref('ON_TAP', list(on_tap))
-        print formula + " added to munkitap"
+        if not quiet:
+            print formula + " added to munkitap"
 
 
-def remove_formula(formula):
+def remove_formula(formula, quiet=False):
     """Remove a formula from munkitap"""
     on_tap = set(get_pref('ON_TAP')) or set()
     if formula not in on_tap:
-        print formula + " not in munkitap"
+        if not quiet:
+            print formula + " not in munkitap."
     else:
         # Remove from formula list
         on_tap.remove(formula)
         set_pref('ON_TAP', list(on_tap))
-        print formula + " removed from munkitap"
+        if not quiet:
+            print formula + " removed from munkitap."
     # Remove from formula info array
     formula_info = dict(get_formula_info())
     try:
         del formula_info[formula]
+        if not quiet:
+            print formula + " info removed from munkitap."
     except KeyError:
         pass
     set_pref('FORMULA_INFO', formula_info)
@@ -90,7 +96,7 @@ def update_formula_info(formula):
 
 
 
-def pour_formula(formula, identifier=None, force_pour=False):
+def pour_formula(formula, identifier=None, force_pour=False, quiet=False):
     """Pour a formula (build a pkg)"""
     formula_info = get_pref('FORMULA_INFO')[formula]
     build_path = os.path.join(get_cache(), formula)
@@ -102,17 +108,20 @@ def pour_formula(formula, identifier=None, force_pour=False):
             )
         ):
             if os.path.isfile(pkg):
-                print "Package " + pkg + " already exists."
-                print "Use the --force command if you wish to rebuild the package."
-                return
+                if not quiet:
+                    print pkg + " already exists."
+                    print "  (Use the --force command if you wish to rebuild this package.)"
+                return None, None
     try: 
         os.makedirs(build_path)
     except OSError:
         if not os.path.isdir(build_path):
             raise
+    if not quiet:
+        print "Building " + (formula + '-' + formula_info['version'] + '.pkg') + " at " + build_path
     if not identifier:
         identifier = get_id()
-    subprocess.Popen(
+    out, err = subprocess.Popen(
         [
             get_brew(),
             'pkg',
@@ -121,9 +130,11 @@ def pour_formula(formula, identifier=None, force_pour=False):
             identifier,
             formula,
         ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         cwd=build_path
-    )
-    return
+    ).communicate()
+    return out, err
 
 
 # Parser functions
@@ -228,12 +239,14 @@ def main():
     main_parser = argparse.ArgumentParser(
         description='Automates building pkg files from brew formulae.'
     )
-    '''main_parser.add_argument(
+    main_parser.add_argument(
         '-q',
         '--quiet',
         action="store_true",
+        default=False,
         help="Suppress normal output messages. Errors will still be printed to stderr.",
-    )'''
+        dest='quiet'
+    )
     subparsers = main_parser.add_subparsers(
         title='Munkitap commands',
         description='(command line options for munkitap)',
@@ -246,6 +259,13 @@ def main():
     munkitap_set_subparser(subparsers)
 
     args = main_parser.parse_args()
+    quiet = args.quiet
+    munkitap_command = args.command
+    try:
+        formula = args.formula
+    except AttributeError:
+        pass
+
 
     # Check if sudo/root
     if os.geteuid() == 0:
@@ -261,16 +281,10 @@ def main():
     install_brew_tap('timsutton/formulae')
     install_latest_brew_formula('brew-pkg')
 
-    munkitap_command = args.command
-    try:
-        formula = args.formula
-    except AttributeError:
-        pass
-
     # Add
     if munkitap_command == 'add':
-        if is_brew_formula(formula):
-            add_formula(formula)
+        if is_brew_formula(formula, quiet=quiet):
+            add_formula(formula, quiet=quiet)
             update_formula_info(formula)
             if args.install:
                 install_latest_brew_formula(formula)
@@ -278,7 +292,7 @@ def main():
 
     # Remove
     if munkitap_command == 'remove':
-        remove_formula(formula)
+        remove_formula(formula, quiet=quiet)
         if args.uninstall:
             uninstall_brew_formula(formula)
         return
@@ -286,18 +300,27 @@ def main():
     # Pour
     if munkitap_command == 'pour':
         if args.formula:
-            is_brew_formula(formula)
+            is_brew_formula(formula, quiet=quiet)
             if args.formula in get_on_tap():
                 install_latest_brew_formula(formula)
                 update_formula_info(formula)
-                pour_formula(formula, identifier=args.identifier)
+                out, err = pour_formula(
+                    formula,
+                    identifier=args.identifier,
+                    quiet=quiet
+                )
             else:
-                print args.formula + " not in munkitap"
+                if not quiet:
+                    print args.formula + " not in munkitap"
         else:   
             for on_tap_formula in get_on_tap():
                 install_latest_brew_formula(on_tap_formula)
                 update_formula_info(on_tap_formula)
-                pour_formula(on_tap_formula, identifier=args.identifier)
+                pour_formula(
+                    on_tap_formula,
+                    identifier=args.identifier,
+                    quiet=quiet
+                )
 
     # Set
     if munkitap_command == 'set':
