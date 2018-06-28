@@ -154,7 +154,8 @@ def munkitap_add_subparser(subparsers):
     add_command_subparser.add_argument(
         "-i",
         "--install",
-        action='store_true',
+        action="store_true",
+        default=False,
         help="Tells brew to install/upgrade the given formula"
     )
 
@@ -174,7 +175,8 @@ def munkitap_remove_subparser(subparsers):
     remove_command_subparser.add_argument(
         "-u",
         "--uninstall",
-        action='store_true',
+        action="store_true",
+        default=False,
         help="Tells brew to uninstall the given formula"
     )
 
@@ -230,6 +232,29 @@ def munkitap_set_subparser(subparsers):
     )
 
 
+def munkitap_list_subparser(subparsers):
+    """Munkitap 'list' subparser"""
+    list_command_subparser = subparsers.add_parser(
+        "list",
+        help="Show all formulae in munkitap"
+    )
+    list_command_subparser.add_argument(
+        "-f",
+        "--formula",
+        action='store',
+        type=str,
+        help="Show a specific formula",
+        metavar='\b'
+    )
+    list_command_subparser.add_argument(
+        "-i",
+        "--info",
+        action="store_true",
+        default=False,
+        help="Show formula information",
+    )
+
+
 
 ## Main function
 
@@ -257,6 +282,7 @@ def main():
     munkitap_remove_subparser(subparsers)
     munkitap_pour_subparser(subparsers)
     munkitap_set_subparser(subparsers)
+    munkitap_list_subparser(subparsers)
 
     args = main_parser.parse_args()
     quiet = args.quiet
@@ -327,6 +353,28 @@ def main():
             set_cache(args.cache)
         if args.identifier:
             set_id(args.identifier)
+
+    # List
+    if munkitap_command == 'list':
+        on_tap_formulae = sorted(set(get_on_tap()))
+        formula_info = get_formula_info()
+        if args.formula:
+            if args.formula in on_tap_formulae:
+                print args.formula + " is on tap"
+                if args.info:
+                    for key in sorted(formula_info[formula].keys()):
+                        print "    " + key + " = " + formula_info[formula][key]
+                    print
+            else:
+                print args.formula + " not on tap"
+                print "Please add it to munkitap"
+        else:
+            for formula in on_tap_formulae:
+                print formula
+                if args.info:
+                    for key in sorted(formula_info[formula].keys()):
+                        print "    " + key + " = " + formula_info[formula][key]
+                    print
             
 
 
