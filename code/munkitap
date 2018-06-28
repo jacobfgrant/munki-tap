@@ -277,10 +277,6 @@ def main():
         print "Please install Homebrew."
         exit()
 
-    # Install brew-pkg
-    install_brew_tap('timsutton/formulae')
-    install_latest_brew_formula('brew-pkg')
-
     # Add
     if munkitap_command == 'add':
         if is_brew_formula(formula, quiet=quiet):
@@ -299,6 +295,9 @@ def main():
 
     # Pour
     if munkitap_command == 'pour':
+        # Install brew-pkg
+        install_brew_tap('timsutton/formulae')
+        install_latest_brew_formula('brew-pkg')
         if args.formula:
             is_brew_formula(formula, quiet=quiet)
             if args.formula in get_on_tap():
