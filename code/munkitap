@@ -118,7 +118,7 @@ def pour_formula(formula, identifier=None, force_pour=False, quiet=False):
         if not os.path.isdir(build_path):
             raise
     if not quiet:
-        print "Building " + (formula + '-' + formula_info['version'] + '.pkg') + " at " + build_path
+        print "Building " + (formula + '-' + formula_info['version'] + '.pkg') + " at " + build_path + "/"
     if not identifier:
         identifier = get_id()
     out, err = subprocess.Popen(
@@ -321,6 +321,10 @@ def main():
 
     # Pour
     if munkitap_command == 'pour':
+        if not args.formula and not get_on_tap():
+            if not quiet:
+                print "Nothing on tap to pour"
+            return
         # Install brew-pkg
         install_brew_tap('timsutton/formulae')
         install_latest_brew_formula('brew-pkg')
@@ -346,6 +350,7 @@ def main():
                     identifier=args.identifier,
                     quiet=quiet
                 )
+        return
 
     # Set
     if munkitap_command == 'set':
@@ -353,6 +358,7 @@ def main():
             set_cache(args.cache)
         if args.identifier:
             set_id(args.identifier)
+        return
 
     # List
     if munkitap_command == 'list':
@@ -375,6 +381,7 @@ def main():
                     for key in sorted(formula_info[formula].keys()):
                         print "    " + key + " = " + formula_info[formula][key]
                     print
+        return
             
 
 
