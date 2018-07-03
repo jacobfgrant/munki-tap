@@ -8,7 +8,7 @@
 #  Created by Jacob F. Grant
 #
 #  Written: 06/24/18
-#  Updated: 06/27/18
+#  Updated: 07/03/18
 #
 
 """
@@ -22,6 +22,7 @@ import os
 import subprocess
 
 from munkitap_preferences import get_brew
+from utils import *
 
 
 # Homebrew Functions

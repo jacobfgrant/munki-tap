@@ -27,6 +27,8 @@ from CoreFoundation import CFPreferencesAppSynchronize, \
                             CFPreferencesSetAppValue
 # pylint: enable=E0611
 
+from utils import *
+
 
 BUNDLE_ID = 'com.github.munkitap'
 
