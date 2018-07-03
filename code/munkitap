@@ -8,7 +8,7 @@
 #  Created by Jacob F. Grant
 #
 #  Written: 06/9/18
-#  Updated: 06/27/18
+#  Updated: 07/03/18
 #
 
 """
@@ -112,11 +112,7 @@ def pour_formula(formula, identifier=None, force_pour=False, quiet=False):
                     print pkg + " already exists."
                     print "  (Use the --force command if you wish to rebuild this package.)"
                 return None, None
-    try: 
-        os.makedirs(build_path)
-    except OSError:
-        if not os.path.isdir(build_path):
-            raise
+    create_dir(build_path)
     if not quiet:
         print "Building " + (formula + '-' + formula_info['version'] + '.pkg') + " at " + build_path + "/"
     if not identifier:

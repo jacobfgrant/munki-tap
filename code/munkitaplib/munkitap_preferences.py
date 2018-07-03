@@ -8,7 +8,7 @@
 #  Created by Jacob F. Grant
 #
 #  Written: 06/24/18
-#  Updated: 06/25/18
+#  Updated: 07/03/18
 #
 
 """
@@ -79,11 +79,7 @@ def get_cache():
     if not cache:
         cache = os.path.join(os.getenv("HOME"), 'Library/Munkitap/')
         set_pref('CACHE', cache)
-    try: 
-        os.makedirs(cache)
-    except OSError:
-        if not os.path.isdir(cache):
-            raise
+    create_dir(cache)
     return cache
 
 def get_formula_info():
