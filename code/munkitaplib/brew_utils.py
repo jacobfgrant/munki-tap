@@ -76,12 +76,40 @@ def install_brew_tap(tap):
     return out, err
 
 
-def install_latest_brew_formula(formula):
+def install_latest_brew_formula(formula, quiet=False):
     """Install or upgrade a brew formula"""
-    if True:
+    # Check formula info for install/up-to-date status
+    out, err = subprocess.Popen(
+        [
+            get_brew(),
+            'info',
+            '--json=v1',
+            formula
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    ).communicate()
+    # Format JSON output and test for errors
+    try:
+        output = json.loads(out)[0]
+    except TypeError:
+        print "Error: " + formula + " not found"
+        return out, err
+    # Install if no versions installed
+    if not output['installed']:
         brew_command = 'install'
-    else:
+        if not quiet:
+            print "Installing " + formula
+    # Upgrade if outdated
+    elif output['outdated']:
         brew_command = 'upgrade'
+        if not quiet:
+            print "Upgrading " + formula
+    # Return if installed and up-to-date
+    else:
+        print formula + " already installed and up-to-date"
+        return out, err
+    # Brew install/upgrade
     out, err = subprocess.Popen(
         [
             get_brew(),
