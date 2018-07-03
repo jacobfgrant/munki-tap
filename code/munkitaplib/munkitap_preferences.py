@@ -114,9 +114,31 @@ def get_id():
     return identifier
 
 
+def get_munki_catalog():
+    """Get Munki catalog"""
+    munki_catalog = get_pref('MUNKI_CATALOG')
+    if not munki_catalog:
+        munki_catalog = 'testing'
+        set_pref('MUNKI_CATALOG', munki_catalog)
+    return munki_catalog
+
+
 def get_munki_repo():
     """Get Munki repo path"""
-    return '/Volumes/munki-repo/'
+    munki_repo = get_pref('MUNKI_REPO')
+    if not munki_repo:
+        munki_repo = ''
+        set_pref('MUNKI_REPO', munki_repo)
+    return munki_repo
+
+
+def get_munki_subdir():
+    """Get Munki subdirectory for munkitap"""
+    munki_subdir = get_pref('MUNKI_SUBDIR')
+    if not munki_subdir:
+        munki_subdir = 'munkitap'
+        set_pref('MUNKI_SUBDIR', munki_subdir)
+    return munki_subdir
 
 
 def get_on_tap():
@@ -142,6 +164,21 @@ def set_cache(cache):
 def set_id(identifier):
     """Set identifier"""
     set_pref('IDENTIFIER', identifier)
+
+
+def set_munki_catalog(munki_catalog):
+    """Set Munki catalog"""
+    set_pref('MUNKI_CATALOG', munki_catalog)
+
+
+def set_munki_repo(munki_repo):
+    """Set Munki repo path"""
+    set_pref('MUNKI_REPO', munki_repo)
+
+
+def set_munki_subdir(munki_subdir):
+    """Set Munki subdirectory for munkitap"""
+    set_pref('MUNKI_SUBDIR', munki_subdir)
 
 
 # Testing Preferences

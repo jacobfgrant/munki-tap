@@ -18,5 +18,6 @@ Library of tools and functions for Munkitap.
 """
 
 from brew_utils import *
+from munki_utils import *
 from munkitap_preferences import *
 from utils import *
