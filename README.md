@@ -2,7 +2,7 @@
 
 Munkitap is a tool for automatically building updated, stand-alone pkg installers from formulae in [Homebrew](https://github.com/Homebrew/brew) using Timothy Sutton's [brew-pkg](https://github.com/timsutton/brew-pkg) tool.
 
-Eventually it should allow administrators to automatically upload these packages into munki; this functionality will be added in a future release.
+It can also automatically add these packages to a mounted munki repo.
 
 
 ## Installation
