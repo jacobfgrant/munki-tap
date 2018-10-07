@@ -8,7 +8,7 @@
 #  Created by Jacob F. Grant
 #
 #  Written: 06/28/18
-#  Updated: 06/28/18
+#  Updated: 10/07/18
 #
 
 
@@ -27,16 +27,10 @@ then
     exit 2
 fi
 
-if [ ! -f "./scripts/postinstall" ]
-then
-    echo 'missing postinstall script'
-    exit 3
-fi
-
 if [ ! -f "../code/munkitap" ] || [ ! -d "../code/munkitaplib" ]
 then
     echo 'munkitap files not found'
-    exit 4
+    exit 3
 fi
 
 # Create payload directory
@@ -45,10 +39,14 @@ then
     rm -r ./payload
 fi
 mkdir -p ./payload/Library/Munkitap/
+mkdir -p ./payload/usr/local/bin/
 
-# Move files
+# Copy munkitap files
 cp ../code/munkitap ./payload/Library/Munkitap/
 cp -r ../code/munkitaplib ./payload/Library/Munkitap/
+
+# Create symbolic link in /usr/local/bin/
+ln -s /Library/Munkitap/munkitap ./payload/usr/local/bin/munkitap
 
 # Build package
 "$MUNKIPKG" .
