@@ -1,20 +1,17 @@
 #!/usr/bin/python
 
-#  Munkitap Munki Utils
-#
-#  munki_utils.py
-#
-#
-#  Created by Jacob F. Grant
-#
-#  Written: 06/29/18
-#  Updated: 07/03/18
-#
-
 """
+Munkitap Munki Utils
+
 munki_utils.py
 
 Functions for importing packages into Munki.
+
+
+Created by Jacob F. Grant
+
+Written: 06/29/18
+Updated: 10/07/18
 """
 
 import os

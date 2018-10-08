@@ -1,17 +1,8 @@
 #!/usr/bin/python
 
-#  Munkitap
-#
-#  munkitap
-#
-#
-#  Created by Jacob F. Grant
-#
-#  Written: 06/9/18
-#  Updated: 07/03/18
-#
-
 """
+Munkitap
+
 munkitap
 
 Tool for automating building macOS packages from the latest Homebrew
@@ -21,6 +12,12 @@ Requires Homebrew and brew-pkg:
 
 https://github.com/Homebrew/brew
 https://github.com/timsutton/brew-pkg
+
+
+Created by Jacob F. Grant
+
+Written: 06/9/18
+Updated: 10/07/18
 """
 
 import argparse
@@ -217,7 +214,6 @@ def munkitap_pour_subparser(subparsers):
         default=False,
         help="Skip importing packages into munki"
     )
-
 
 
 def munkitap_set_subparser(subparsers):
@@ -520,7 +516,6 @@ def main():
                     print
         return
             
-
 
 if __name__ == "__main__":
     main()

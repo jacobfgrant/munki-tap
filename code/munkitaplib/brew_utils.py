@@ -1,20 +1,17 @@
 #!/usr/bin/python
 
-#  Munkitap Brew Utils
-#
-#  brew_utils.py
-#
-#
-#  Created by Jacob F. Grant
-#
-#  Written: 06/24/18
-#  Updated: 07/03/18
-#
-
 """
+Munkitap Brew Utils
+
 brew_utils.py
 
 Functions for working with Homebrew.
+
+
+Created by Jacob F. Grant
+
+Written: 06/24/18
+Updated: 10/07/18
 """
 
 import json
@@ -138,5 +135,5 @@ def uninstall_brew_formula(formula):
 
 
 if __name__ == "__main__":
-    brew_installed()
+    pass
  

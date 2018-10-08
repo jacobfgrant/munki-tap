@@ -1,20 +1,17 @@
 #!/usr/bin/python
 
-#  Munkitap Utils
-#
-#  utils.py
-#
-#
-#  Created by Jacob F. Grant
-#
-#  Written: 07/02/18
-#  Updated: 07/03/18
-#
-
 """
+Munkitap Utils
+
 utils.py
 
-Basic functions and utilities.
+Basic functions and utilities for Munkitap.
+
+
+Created by Jacob F. Grant
+
+Written: 07/02/18
+Updated: 10/07/18
 """
 
 import os

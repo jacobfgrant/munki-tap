@@ -1,20 +1,17 @@
 #!/usr/bin/python
 
-#  Munkitap Preferences
-#
-#  munkitap_preferences.py
-#
-#
-#  Created by Jacob F. Grant
-#
-#  Written: 06/24/18
-#  Updated: 07/03/18
-#
-
 """
+Munkitap Preferences
+
 munkitap_preferences.py
 
 Functions for getting and setting Munkitap preferences.
+
+
+Created by Jacob F. Grant
+
+Written: 06/24/18
+Updated: 10/07/18
 """
 
 import os
@@ -83,6 +80,7 @@ def get_cache():
         set_pref('CACHE', cache)
     create_dir(cache)
     return cache
+
 
 def get_formula_info():
     """Get formula info"""
