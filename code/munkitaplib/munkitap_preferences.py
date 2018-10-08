@@ -68,7 +68,7 @@ def get_brew():
             brew_path = subprocess.check_output(['which', 'brew']).split('\n')[0]
             set_pref('BREW_PATH', brew_path)
         except subprocess.CalledProcessError:
-            print "ERROR: brew not found.\nPlease install Homebrew."
+            pass
     return brew_path
 
 

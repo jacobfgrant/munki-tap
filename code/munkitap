@@ -301,13 +301,22 @@ def main():
     main_parser = argparse.ArgumentParser(
         description='Automates building pkg files from brew formulae.'
     )
-    main_parser.add_argument(
+    verbosity = main_parser.add_mutually_exclusive_group()
+    verbosity.add_argument(
         '-q',
         '--quiet',
         action="store_true",
         default=False,
-        help="Suppress normal output messages. Errors will still be printed to stderr.",
+        help="Run munkitap silently. (Mutally exclusive with --verbose.)",
         dest='quiet'
+    )
+    verbosity.add_argument(
+        '-v',
+        '--verbose',
+        action="store_true",
+        default=False,
+        help="Run munkitap with more verbose output. (Mutally exclusive with --quiet.)",
+        dest='verbose'
     )
     subparsers = main_parser.add_subparsers(
         title='Munkitap commands',
@@ -336,8 +345,7 @@ def main():
         exit()
 
     # Check if homebrew installed
-    if not brew_installed():
-        print "Please install Homebrew."
+    if not brew_installed(quiet):
         exit()
 
     # Add

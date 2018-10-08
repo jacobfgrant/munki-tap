@@ -24,9 +24,11 @@ from utils import *
 
 # Homebrew Functions
 
-def brew_installed():
+def brew_installed(quiet=False):
     """Return if brew installed"""
     if not get_brew():
+        if not quiet:
+            print "ERROR: brew not found. Please install Homebrew."
         return False
     else:
         return True
