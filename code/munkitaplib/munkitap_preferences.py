@@ -93,18 +93,6 @@ def get_formula_info():
     return formula_info
 
 
-def get_git():
-    """Get the system git path"""
-    git_path = get_pref('GIT_PATH')
-    if not git_path or not os.path.isfile(git_path):
-        try:
-            git_path = subprocess.check_output(['which', 'git']).split('\n')[0]
-            set_pref('GIT_PATH', git_path)
-        except subprocess.CalledProcessError:
-            print "ERROR: git not found.\nPlease install Git."
-    return git_path
-
-
 def get_id():
     """Get package identifier"""
     identifier = get_pref('IDENTIFIER')
@@ -191,8 +179,6 @@ def initialize_preferences():
     print get_cache()
     # Formula Info
     print get_formula_info()
-    # Git
-    print get_git()
     # Munki
     get_munki_repo()
     # On Tap
