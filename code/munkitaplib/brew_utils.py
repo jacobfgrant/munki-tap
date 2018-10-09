@@ -24,28 +24,25 @@ from utils import *
 
 # Homebrew Functions
 
-def brew_installed(quiet=False):
+def brew_installed(log):
     """Return if brew installed"""
     if not get_brew():
-        if not quiet:
-            print "ERROR: brew not found. Please install Homebrew."
+        log.print_message("ERROR: brew not found. Please install Homebrew.")
         return False
     else:
         return True
 
 
-def is_brew_formula(formula, formula_list=None, quiet=False):
+def is_brew_formula(log, formula, formula_list=None):
     """Check if formula in homebrew"""
     if not formula_list:
         formula_list = subprocess.check_output([get_brew(), 'search'])
         formula_list = formula_list.split('\n')[:-1]
     if formula in formula_list:
-        if not quiet:
-            print formula + " in homebrew"
+        log.print_message(formula + " in homebrew")
         return True
     else:
-        if not quiet:
-            print formula + " not in homebrew"
+        log.print_message(formula + " not in homebrew")
         return False
 
 
@@ -76,7 +73,7 @@ def install_brew_tap(tap):
     return out, err
 
 
-def install_latest_brew_formula(formula, quiet=False):
+def install_latest_brew_formula(log, formula):
     """Install or upgrade a brew formula"""
     # Check formula info for install/up-to-date status
     out, err = subprocess.Popen(
@@ -93,21 +90,19 @@ def install_latest_brew_formula(formula, quiet=False):
     try:
         output = json.loads(out)[0]
     except TypeError:
-        print "Error: " + formula + " not found"
+        log.print_message("Error: " + formula + " not found")
         return out, err
     # Install if no versions installed
     if not output['installed']:
         brew_command = 'install'
-        if not quiet:
-            print "Installing " + formula
+        log.print_message("Installing " + formula)
     # Upgrade if outdated
     elif output['outdated']:
         brew_command = 'upgrade'
-        if not quiet:
-            print "Upgrading " + formula
+        log.print_message("Upgrading " + formula)
     # Return if installed and up-to-date
     else:
-        print formula + " already installed and up-to-date"
+        log.print_message(formula + " already installed and up-to-date")
         return out, err
     # Brew install/upgrade
     out, err = subprocess.Popen(
@@ -122,8 +117,9 @@ def install_latest_brew_formula(formula, quiet=False):
     return out, err
 
 
-def uninstall_brew_formula(formula):
+def uninstall_brew_formula(log, formula):
     """Uninstall a brew formula"""
+    log.print_message("Uninstalling " + formula)
     out, err = subprocess.Popen(
         [
             get_brew(),

@@ -25,13 +25,25 @@ from utils import *
 
 # Functions
 
-def munkitools_installed():
+def munkitools_installed(log):
     """Return if required munki installed"""
     if not os.path.isfile('/usr/local/munki/managedsoftwareupdate'):
+        log.print_message(
+            "Munki tools not installed",
+            "Munki tools not installed (managedsoftwareupdate not found)"
+        )
         return False
     if not os.path.isfile('/usr/local/munki/makepkginfo'):
+        log.print_message(
+            "Munki tools not installed",
+            "Munki tools not installed (makepkginfo not found)"
+        )
         return False
     if not os.path.isfile('/usr/local/munki/makecatalogs'):
+        log.print_message(
+            "Munki tools not installed",
+            "Munki tools not installed (makecatalogs not found)"
+        )
         return False
     return True
 
@@ -61,12 +73,14 @@ def generate_already_in_munki(catalog_info):
     return lambda pkginfo : pkginfo['installer_item_hash'] in item_hashes
 
 
-def get_pkginfo(pkg, name, desc, url, catalog, quiet=False):
+def get_pkginfo(log, pkg, name, desc, url, catalog):
     """Return packageinfo file for a pkg"""
-    if not quiet:
-        print "Generating pkginfo for " + pkg
+    log.print_message(
+        "Generating pkginfo for " + pkg.split('/')[-1],
+        "Generating pkginfo for " + pkg
+    )
     description = desc + '.\n\n' + url
-    proc = subprocess.Popen(
+    out, err = subprocess.Popen(
         [
             '/usr/local/munki/makepkginfo',
             pkg,
@@ -83,15 +97,14 @@ def get_pkginfo(pkg, name, desc, url, catalog, quiet=False):
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
-    )
-    out, err = proc.communicate()
+    ).communicate()
     if not err:
         return readPlistFromString(out)
     else:
         return None
 
 
-def add_pkg_to_munki(pkg, pkginfo, repo_path, repo_subdirectory, quiet=False):
+def add_pkg_to_munki(log, pkg, pkginfo, repo_path, repo_subdirectory):
     """Adds a pkg to munki"""
     pkginfo_dest_path = os.path.join(repo_path, 'pkgsinfo', repo_subdirectory)
     pkg_dest_path = os.path.join(repo_path, 'pkgs', repo_subdirectory)
@@ -113,9 +126,15 @@ def add_pkg_to_munki(pkg, pkginfo, repo_path, repo_subdirectory, quiet=False):
         )
         pkginfo_path = os.path.join(pkginfo_dest_path, name)
         pkg_path = os.path.join(pkg_dest_path, (name + '.pkg'))
-    if not quiet:
-        print "Copying pkginfo for " + name + " to " + pkginfo_path
-        print "Copying " + name + ".pkg to " + pkg_path
+    log.print_message(
+        "Copying pkginfo for " + name + " to munki",
+        "Copying pkginfo for " + name + " to " + pkginfo_path
+        )
+    log.print_message(
+        "Copying " + name + ".pkg to munki",
+        "Copying " + name + ".pkg to " + pkg_path
+        )
+
     # Set installer_item_location
     pkginfo = dict(pkginfo)
     pkginfo['installer_item_location'] = os.path.join(repo_subdirectory, (name + '.pkg'))
@@ -124,10 +143,9 @@ def add_pkg_to_munki(pkg, pkginfo, repo_path, repo_subdirectory, quiet=False):
     return pkginfo_path, pkg_path
 
 
-def run_makecatalogs(repo_path, quiet=False):
+def run_makecatalogs(log, repo_path):
     """Run munki makecatalogs"""
-    if not quiet:
-        print "Running makecatalogs"
+    log.print_message("Running makecatalogs")
     out, err = subprocess.Popen(
         [
             '/usr/local/munki/makecatalogs',

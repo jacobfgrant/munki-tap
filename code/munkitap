@@ -35,7 +35,7 @@ BUNDLE_ID = 'com.github.munkitap'
 
 # Munkitap functions
 
-def add_formula(formula, quiet=False):
+def add_formula(log, formula):
     """Add a formula to munkitap"""
     on_tap = get_pref('ON_TAP')
     if not on_tap:
@@ -43,33 +43,28 @@ def add_formula(formula, quiet=False):
     else:
         on_tap = set(on_tap)
     if formula in on_tap:
-        if not quiet:
-            print formula + " already in munkitap"
+        log.print_message(formula + " already in munkitap")
     else:
         on_tap.add(formula)
         set_pref('ON_TAP', list(on_tap))
-        if not quiet:
-            print formula + " added to munkitap"
+        log.print_message(formula + " added to munkitap")
 
 
-def remove_formula(formula, quiet=False):
+def remove_formula(log, formula):
     """Remove a formula from munkitap"""
     on_tap = set(get_pref('ON_TAP')) or set()
     if formula not in on_tap:
-        if not quiet:
-            print formula + " not in munkitap."
+        log.print_message(formula + " not in munkitap")
     else:
         # Remove from formula list
         on_tap.remove(formula)
         set_pref('ON_TAP', list(on_tap))
-        if not quiet:
-            print formula + " removed from munkitap."
+        log.print_message(formula + " removed from munkitap")
     # Remove from formula info array
     formula_info = dict(get_formula_info())
     try:
         del formula_info[formula]
-        if not quiet:
-            print formula + " info removed from munkitap."
+        log.print_message(formula + " info removed from munkitap")
     except KeyError:
         pass
     set_pref('FORMULA_INFO', formula_info)
@@ -103,7 +98,7 @@ def update_formula_info_pkg(formula, pkg_path):
     set_pref('FORMULA_INFO', formula_info)
 
 
-def pour_formula(formula, identifier=None, force_pour=False, quiet=False):
+def pour_formula(log, formula, identifier=None, force_pour=False):
     """Pour a formula (build a pkg)"""
     formula_info = get_pref('FORMULA_INFO')[formula]
     build_path = os.path.join(get_cache(), formula)
@@ -115,13 +110,16 @@ def pour_formula(formula, identifier=None, force_pour=False, quiet=False):
             )
         ):
             if os.path.isfile(pkg):
-                if not quiet:
-                    print pkg + " already exists."
-                    print "  (Use the --force command if you wish to rebuild this package.)"
+                log.print_message(
+                    (pkg.split('/')[-1] + " already exists"),
+                    (pkg + " already exists (Use the --force command if you wish to rebuild this package)")
+                )
                 return None, None
     create_dir(build_path)
-    if not quiet:
-        print "Building " + (formula + '-' + formula_info['version'] + '.pkg') + " at " + build_path + "/"
+    log.print_message(
+        "Building " + (formula + '-' + formula_info['version'] + '.pkg'),
+        "Building " + (formula + '-' + formula_info['version'] + '.pkg') + " at " + build_path + "/"
+    )
     if not identifier:
         identifier = get_id()
     out, err = subprocess.Popen(
@@ -331,13 +329,18 @@ def main():
     munkitap_list_subparser(subparsers)
 
     args = main_parser.parse_args()
-    quiet = args.quiet
     munkitap_command = args.command
     try:
         formula = args.formula
     except AttributeError:
         pass
 
+    # Create Munkitap Log
+    munkitap_log = MunkitapLog(
+        args.quiet,
+        args.verbose,
+        os.path.join(get_cache(), 'munkitap.log')
+    )
 
     # Check if sudo/root
     if os.geteuid() == 0:
@@ -345,43 +348,46 @@ def main():
         exit()
 
     # Check if homebrew installed
-    if not brew_installed(quiet):
-        exit()
+    if not brew_installed(munkitap_log):
+        munkitap_log.log_to_file()
+        return
 
     # Add
     if munkitap_command == 'add':
-        if is_brew_formula(formula, quiet=quiet):
-            add_formula(formula, quiet=quiet)
+        if is_brew_formula(munkitap_log, formula):
+            add_formula(munkitap_log, formula)
             update_formula_info(formula)
             if args.install:
-                install_latest_brew_formula(formula)
+                install_latest_brew_formula(munkitap_log, formula)
+        munkitap_log.log_to_file()
         return
 
     # Remove
     if munkitap_command == 'remove':
-        remove_formula(formula, quiet=quiet)
+        remove_formula(munkitap_log, formula)
         if args.uninstall:
-            uninstall_brew_formula(formula)
+            uninstall_brew_formula(munkitap_log, formula)
+        munkitap_log.log_to_file()
         return
 
     # Pour
     if munkitap_command == 'pour':
         if not args.formula and not get_on_tap():
-            if not quiet:
-                print "Nothing on tap to pour"
+            munkitap_log.print_message("Nothing on tap to pour")
+            munkitap_log.log_to_file()
             return
         # Install brew-pkg
         install_brew_tap('timsutton/formulae')
-        install_latest_brew_formula('brew-pkg')
+        install_latest_brew_formula(munkitap_log, 'brew-pkg')
         if args.formula:
-            is_brew_formula(formula, quiet=quiet)
+            is_brew_formula(munkitap_log, formula)
             if args.formula in get_on_tap():
-                install_latest_brew_formula(formula)
+                install_latest_brew_formula(munkitap_log, formula)
                 update_formula_info(formula)
                 out, err = pour_formula(
+                    munkitap_log, 
                     formula,
-                    identifier=args.identifier,
-                    quiet=quiet
+                    identifier=args.identifier
                 )
                 if out and not err:
                     pkg_path = out.split('\n')[-2].split(' ')[-1]
@@ -393,17 +399,17 @@ def main():
                     update_formula_info_pkg(formula, pkg_path)
 
             else:
-                if not quiet:
-                    print args.formula + " not in munkitap"
-                    return
+                munkitap_log.print_message(args.formula + " not in munkitap")
+                munkitap_log.log_to_file()
+                return
         else:
             for on_tap_formula in get_on_tap():
-                install_latest_brew_formula(on_tap_formula)
+                install_latest_brew_formula(munkitap_log, on_tap_formula)
                 update_formula_info(on_tap_formula)
                 out, err = pour_formula(
+                    munkitap_log,
                     on_tap_formula,
-                    identifier=args.identifier,
-                    quiet=quiet
+                    identifier=args.identifier
                 )
                 if out and not err:
                     pkg_path = out.split('\n')[-2].split(' ')[-1]
@@ -417,88 +423,101 @@ def main():
         
         # Add to munki
         if args.skip_munki:
+            munkitap_log.print_message("Skipping adding to munki")
+            munkitap_log.log_to_file()
             return
-        if not munkitools_installed():
-            if not quiet:
-                print "Munki tools not installed"
+        if not munkitools_installed(munkitap_log):
+            munkitap_log.log_to_file()
             return
         munki_repo = get_munki_repo()
         if not os.path.isdir(munki_repo):
-            if not quiet:
-                print "Munki repo not found"
+            munkitap_log.print_message("Munki repo not found")
+            munkitap_log.log_to_file()
             return
-        munki_subdir = get_munki_subdir()
 
+        munki_subdir = get_munki_subdir()
         munkitap_catalog = get_munki_catalog()
+
         if not os.path.isfile(os.path.join(
             munki_repo,
             'catalogs',
             munkitap_catalog
         )):
-            if not quiet:
-                print munkitap_catalog + " catalog not found in munki"
+            munkitap_log.print_message(munkitap_catalog + " catalog not found in munki")
+            munkitap_log.log_to_file()
             return
 
         catalog_info = get_all_catalog_info(munki_repo)
         already_in_munki = generate_already_in_munki(catalog_info)
         formula_info = get_formula_info()
+        need_makecatalogs = False
 
         if args.formula:
             info = formula_info[args.formula]
             pkginfo = get_pkginfo(
+                munkitap_log,
                 info['pkg'],
                 (args.formula[0].upper() + args.formula[1:]),
                 info['description'],
                 info['url'],
-                munkitap_catalog,
-                quiet=quiet
+                munkitap_catalog
             )
             if not already_in_munki(pkginfo):
+                need_makecatalogs = True
                 add_pkg_to_munki(
+                    munkitap_log,
                     info['pkg'],
                     pkginfo,
                     get_munki_repo(),
-                    get_munki_subdir(),
-                    quiet=quiet
+                    get_munki_subdir()
                 )
-                run_makecatalogs(munki_repo)
+            else:
+                munkitap_log.print_message(info['pkg'] + " already in munki")
         else:
-            need_makecatalogs = False
             for on_tap_formula in get_on_tap():
                 info = formula_info[on_tap_formula]
                 pkginfo = get_pkginfo(
+                    munkitap_log,
                     info['pkg'],
                     (on_tap_formula[0].upper() + on_tap_formula[1:]),
                     info['description'],
                     info['url'],
-                    munkitap_catalog,
-                    quiet=quiet
+                    munkitap_catalog
                 )
                 if not already_in_munki(pkginfo):
                     need_makecatalogs = True
                     add_pkg_to_munki(
+                        munkitap_log,
                         info['pkg'],
                         pkginfo,
                         get_munki_repo(),
-                        get_munki_subdir(),
-                        quiet=quiet
+                        get_munki_subdir()
                     )
-            if need_makecatalogs:
-                run_makecatalogs(munki_repo)
+                else:
+                    munkitap_log.print_message(info['pkg'].split('/')[-1] + " already in munki")
+        if need_makecatalogs:
+            run_makecatalogs(munkitap_log, munki_repo)
+        munkitap_log.log_to_file()
         return
 
     # Set
     if munkitap_command == 'set':
         if args.cache:
             set_cache(args.cache)
+            munkitap_log.print_message("Setting cache to " + str(args.cache))
         if args.identifier:
             set_id(args.identifier)
+            munkitap_log.print_message("Setting identifier to " + str(args.identifier))
         if args.munki_catalog:
             set_munki_catalog(args.munki_catalog)
+            munkitap_log.print_message("Setting munki catalog to " + str(args.munki_catalog))
         if args.munki_repo:
             set_munki_repo(args.munki_repo)
+            munkitap_log.print_message("Setting munki repo to " + str(args.munki_repo))
         if args.munki_subdir:
             set_munki_subdir(args.munki_subdir)
+            munkitap_log.print_message("Setting munki subdirectory to " + str(args.munki_subdir))
+        munkitap_log.log_to_file()
         return
 
     # List
@@ -522,6 +541,7 @@ def main():
                     for key in sorted(formula_info[formula].keys()):
                         print "    " + key + " = " + formula_info[formula][key]
                     print
+        munkitap_log.log_to_file()
         return
             
 
