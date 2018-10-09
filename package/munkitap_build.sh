@@ -39,11 +39,13 @@ then
     rm -r ./payload
 fi
 mkdir -p ./payload/Library/Munkitap/
+mkdir -p ./payload/Library/LaunchAgents/
 mkdir -p ./payload/usr/local/bin/
 
 # Copy munkitap files
 cp ../code/munkitap ./payload/Library/Munkitap/
 cp -r ../code/munkitaplib ./payload/Library/Munkitap/
+cp ./launchd/com.github.munkitap.plist ./payload/Library/LaunchAgents/
 
 # Create symbolic link in /usr/local/bin/
 ln -s /Library/Munkitap/munkitap ./payload/usr/local/bin/munkitap
