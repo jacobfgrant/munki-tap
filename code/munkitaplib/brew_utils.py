@@ -60,18 +60,14 @@ def is_brew_formula(log, formula, formula_list=None):
 
 def get_brew_formula(log, formula):
     formula_info = {}
-    try:
-        formula_info = subprocess.check_output(
-            [get_brew(), 'info', '--json=v1', formula]
-        )
-        formula_info = json.loads(formula_info)[0]
-    except Exception as e:
-        formula_info = subprocess.check_output(
-            [get_brew(), 'info', '--json=v2', formula]
-        )
-        cask_info = json.loads(formula_info)
-        formula_info = cask_info.get('casks', [])[0]
-        print('Found a Cask')
+    brew_info = subprocess.check_output([get_brew(), 'info', '--json=v2', formula])
+    brew_info = json.loads(brew_info)
+
+    if len(brew_info.get('formulae', [])) > 0:
+        formula_info = brew_info.get('formulae')[0]
+    elif len(brew_info.get('casks', [])) > 0:
+        formula_info = brew_info.get('casks')[0]
+
     return formula_info
 
 
@@ -95,21 +91,19 @@ def install_latest_brew_formula(log, formula):
     """Install or upgrade a brew formula"""
     # Check formula info for install/up-to-date status
     out, err = subprocess.Popen(
-        [get_brew(), 'info', '--json=v1', formula],
+        [get_brew(), 'info', '--json=v2', formula],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     ).communicate()
     # Format JSON output and test for errors
     try:
-        output = json.loads(out)[0]
-    except ValueError:
-        out, err = subprocess.Popen(
-            [get_brew(), 'info', '--json=v2', formula],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        ).communicate()
-        cask_info = json.loads(out)
-        output = cask_info.get('casks', [])[0]
+        brew_info = json.loads(out)
+
+        if len(brew_info.get('formulae', [])) > 0:
+            output = brew_info.get('formulae', [])[0]
+        elif len(brew_info.get('casks', [])) > 0:
+            output = brew_info.get('casks', [])[0]
+
     except TypeError:
         log.print_message("Error: " + formula + " not found")
         return out, err

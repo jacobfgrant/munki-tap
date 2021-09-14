@@ -91,19 +91,13 @@ def get_formula_info():
     """Get formula info"""
     formula_info = get_pref('FORMULA_INFO')
     if not formula_info:
-        try:
-            formula_info = subprocess.check_output(
-                [get_brew(), 'info', '--json=v1', formula]
-            )
-            formula_info = json.loads(formula_info)[0]
-        except Exception as e:
-            print ('Not a regular Formulae, checking Casks')
-            formula_info = subprocess.check_output(
-                [get_brew(), 'info', '--json=v2', formula]
-            )
-            cask_info = json.loads(formula_info)
-            formula_info = cask_info.get('casks', [])[0]
-            print ('Found a Cask')
+        brew_info = subprocess.check_output([get_brew(), 'info', '--json=v2', formula])
+        brew_info = json.loads(brew_info)
+
+        if len(brew_info.get('formulae', [])) > 0:
+            formula_info = brew_info.get('formulae', [])[0]
+        elif len(brew_info.get('casks', [])) > 0:
+            formula_info = brew_info.get('casks', [])[0]
 
         set_pref('FORMULA_INFO', formula_info)
     return formula_info
