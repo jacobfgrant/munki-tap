@@ -42,6 +42,7 @@ def add_formula(log, formula):
         on_tap = set()
     else:
         on_tap = set(on_tap)
+
     if formula in on_tap:
         log.print_message(formula + " already in munkitap")
     else:
@@ -70,28 +71,31 @@ def remove_formula(log, formula):
     set_pref('FORMULA_INFO', formula_info)
 
 
-def update_formula_info(formula):
+def update_formula_info(log, formula):
     """Update formula info"""
     formula_info = dict(get_formula_info())
-    brew_formula_info = subprocess.check_output([get_brew(), 'info', '--json=v1', formula])
-    brew_formula_info = json.loads(brew_formula_info)[0]
+    brew_formula_info = dict(get_brew_formula(log, formula))
+
     if formula not in formula_info.keys():
         formula_info[formula] = {}
     else:
         formula_info[formula] = dict(formula_info[formula])
+
     formula_info[formula]['description'] = brew_formula_info['desc']
     formula_info[formula]['url'] = brew_formula_info['homepage']
-    formula_info[formula]['version'] = brew_formula_info['versions']['stable']
+    formula_info[formula]['version'] = brew_formula_info['versions']['stable'] if 'stable' in brew_formula_info['versions'] else brew_formula_info['version']
+
     if 'pkg' not in formula_info[formula].keys():
         formula_info[formula]['pkg'] = ''
+
     set_pref('FORMULA_INFO', formula_info)
 
 
-def update_formula_info_pkg(formula, pkg_path):
+def update_formula_info_pkg(log, formula, pkg_path):
     """Update pkg key in formula info"""
     formula_info = dict(get_formula_info())
     if formula not in formula_info.keys():
-        update_formula_info(formula)
+        update_formula_info(log, formula)
         formula_info = dict(get_formula_info())
     formula_info[formula] = dict(formula_info[formula])
     formula_info[formula]['pkg'] = pkg_path
@@ -335,6 +339,8 @@ def main():
     except AttributeError:
         pass
 
+
+
     # Create Munkitap Log
     munkitap_log = MunkitapLog(
         args.quiet,
@@ -356,9 +362,11 @@ def main():
     if munkitap_command == 'add':
         if is_brew_formula(munkitap_log, formula):
             add_formula(munkitap_log, formula)
-            update_formula_info(formula)
+            update_formula_info(munkitap_log, formula)
             if args.install:
                 install_latest_brew_formula(munkitap_log, formula)
+            else:
+                print('nothing to do')
         munkitap_log.log_to_file()
         return
 
@@ -383,7 +391,7 @@ def main():
             is_brew_formula(munkitap_log, formula)
             if args.formula in get_on_tap():
                 install_latest_brew_formula(munkitap_log, formula)
-                update_formula_info(formula)
+                update_formula_info(munkitap_log, formula)
                 out, err = pour_formula(
                     munkitap_log, 
                     formula,
@@ -396,7 +404,7 @@ def main():
                         formula,
                         pkg_path
                     )
-                    update_formula_info_pkg(formula, pkg_path)
+                    update_formula_info_pkg(munkitap_log, formula, pkg_path)
 
             else:
                 munkitap_log.print_message(args.formula + " not in munkitap")
@@ -418,7 +426,7 @@ def main():
                         on_tap_formula,
                         pkg_path
                     )
-                    update_formula_info_pkg(on_tap_formula, pkg_path)
+                    update_formula_info_pkg(munkitap_log, on_tap_formula, pkg_path)
 
         
         # Add to munki
